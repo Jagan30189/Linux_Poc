@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
 	for (int i = 1; i <= order_count; i++)
 	{
-		Order order = {};
+		Order order = {0};
 
 		order.order_id = producer_id * 1000 + i;
 
