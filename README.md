@@ -51,4 +51,28 @@ make clean-ipc
 make clean
 ```
 
+## Tests
+
+GoogleTest and Valgrind tests can be run with:
+
+```sh
+make gtest
+make valgrind
+```
+
+The test target requires GoogleTest development headers and libraries (for
+example, the `libgtest-dev` package on Debian-based Linux distributions).
+
+Static analysis and coverage are available with:
+
+```sh
+make cppcheck
+make misra
+make coverage
+```
+
+`cppcheck` checks the C production sources. `misra` runs Cppcheck's MISRA C:2012
+addon and returns nonzero when violations are found. `coverage` runs the tests
+with GCC instrumentation and writes gcov reports under `coverage/`.
+
 `clean-ipc` removes the named queue and semaphores. Run it after an interrupted process or before starting a new run.
