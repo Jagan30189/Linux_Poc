@@ -1,11 +1,11 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -Iinclude
 LDLIBS = -lrt -pthread
-COMMON = src/mq_manager.c src/semaphore_manager.c src/logger.c
+COMMON = src/mq_manager.c src/semaphore_manager.c src/logger.c src/stats_manager.c
 
-.PHONY: all clean clean-ipc run run-example gtest valgrind cppcheck misra coverage
+.PHONY: all producer consumer order_system monitor clean clean-ipc run run-example gtest valgrind cppcheck misra coverage
 
-all: producer consumer
+all: producer consumer order_system monitor
 
 producer: src/producer.c $(COMMON) include/order.h include/mq_manager.h include/semaphore_manager.h
 	$(CC) $(CFLAGS) -o $@ src/producer.c $(COMMON) $(LDLIBS)
@@ -13,26 +13,28 @@ producer: src/producer.c $(COMMON) include/order.h include/mq_manager.h include/
 consumer: src/consumer.c $(COMMON) include/order.h include/mq_manager.h include/semaphore_manager.h include/logger.h
 	$(CC) $(CFLAGS) -o $@ src/consumer.c $(COMMON) $(LDLIBS)
 
+order_system: src/order_system.c src/mq_manager.c src/semaphore_manager.c src/stats_manager.c include/order.h include/mq_manager.h include/semaphore_manager.h include/stats_manager.h
+	$(CC) $(CFLAGS) -o $@ src/order_system.c src/mq_manager.c src/semaphore_manager.c src/stats_manager.c $(LDLIBS)
+
+monitor: src/monitor.c src/mq_manager.c src/stats_manager.c include/order.h include/mq_manager.h include/stats_manager.h
+	$(CC) $(CFLAGS) -o $@ src/monitor.c src/mq_manager.c src/stats_manager.c $(LDLIBS)
+
 clean:
-	rm -f producer consumer $(TEST_BINARY) $(TEST_OBJECTS) $(TEST_ENTRY_OBJECTS) $(COVERAGE_BINARY) $(COVERAGE_OBJECTS) $(COVERAGE_ENTRY_OBJECTS) $(COVERAGE_PROGRAMS)
+	rm -f producer consumer order_system monitor $(TEST_BINARY) $(TEST_OBJECTS) $(TEST_ENTRY_OBJECTS) $(COVERAGE_BINARY) $(COVERAGE_OBJECTS) $(COVERAGE_ENTRY_OBJECTS) $(COVERAGE_PROGRAMS)
 	rm -f *.gcov
 	rm -rf coverage
 	rm -f logs/orders.log
 
 clean-ipc:
 	-rm -f /dev/mqueue/order_queue
-	-rm -f /dev/shm/sem.empty_sem /dev/shm/sem.full_sem /dev/shm/sem.log_sem
+	-rm -f /dev/shm/sem.empty_sem /dev/shm/sem.full_sem /dev/shm/sem.log_sem /dev/shm/sem.stats_mutex
+	-rm -f /dev/shm/ecommerce_order_stats
 
 run-example: all
 	$(MAKE) clean-ipc
 	mkdir -p logs
 	: > logs/orders.log
-	./producer 1 5 & producer_one=$$!; \
-	./producer 2 5 & producer_two=$$!; \
-	sleep 1; \
-	./consumer 1 5 & consumer_one=$$!; \
-	./consumer 2 5 & consumer_two=$$!; \
-	wait $$producer_one $$producer_two $$consumer_one $$consumer_two
+	./order_system
 
 run: run-example
 
@@ -40,7 +42,7 @@ TEST_CXX = g++
 TEST_CXXFLAGS = -Wall -Wextra -Wpedantic -std=c++17 -Iinclude
 TEST_LDLIBS = -lgtest -lgtest_main -pthread -lrt
 TEST_BINARY = tests/order_processing_test
-TEST_OBJECTS = tests/mq_manager.o tests/semaphore_manager.o tests/logger.o
+TEST_OBJECTS = tests/mq_manager.o tests/semaphore_manager.o tests/logger.o tests/stats_manager.o
 TEST_ENTRY_OBJECTS = tests/consumer_main.o tests/producer_main.o
 
 $(TEST_BINARY): tests/test_order_processing.cpp $(TEST_OBJECTS) $(TEST_ENTRY_OBJECTS) include/order.h include/mq_manager.h include/semaphore_manager.h include/logger.h
@@ -79,7 +81,7 @@ misra:
 COVERAGE_CFLAGS = $(CFLAGS) --coverage
 COVERAGE_CXXFLAGS = $(TEST_CXXFLAGS) --coverage
 COVERAGE_BINARY = coverage/order_processing_test
-COVERAGE_OBJECTS = coverage/mq_manager.o coverage/semaphore_manager.o coverage/logger.o
+COVERAGE_OBJECTS = coverage/mq_manager.o coverage/semaphore_manager.o coverage/logger.o coverage/stats_manager.o
 COVERAGE_ENTRY_OBJECTS = coverage/consumer_main.o coverage/producer_main.o
 COVERAGE_PROGRAMS = coverage/producer coverage/consumer
 

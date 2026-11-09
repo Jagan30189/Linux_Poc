@@ -1,0 +1,138 @@
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -c -o coverage/mq_manager.o src/mq_manager.c
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -c -o coverage/semaphore_manager.o src/semaphore_manager.c
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -c -o coverage/logger.o src/logger.c
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -c -o coverage/stats_manager.o src/stats_manager.c
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -Dmain=consumer_main -c -o coverage/consumer_main.o src/consumer.c
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -Dmain=producer_main -c -o coverage/producer_main.o src/producer.c
+mkdir -p coverage
+g++ -Wall -Wextra -Wpedantic -std=c++17 -Iinclude --coverage -o coverage/order_processing_test tests/test_order_processing.cpp coverage/mq_manager.o coverage/semaphore_manager.o coverage/logger.o coverage/stats_manager.o coverage/consumer_main.o coverage/producer_main.o -lgtest -lgtest_main -pthread -lrt
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -o coverage/producer src/producer.c coverage/mq_manager.o coverage/semaphore_manager.o coverage/logger.o coverage/stats_manager.o -lrt -pthread --coverage
+mkdir -p coverage
+gcc -Wall -Wextra -Wpedantic -std=c11 -Iinclude --coverage -o coverage/consumer src/consumer.c coverage/mq_manager.o coverage/semaphore_manager.o coverage/logger.o coverage/stats_manager.o -lrt -pthread --coverage
+mkdir -p logs
+./coverage/order_processing_test
+Running main() from ./googletest/src/gtest_main.cc
+[==========] Running 13 tests from 2 test suites.
+[----------] Global test environment set-up.
+[----------] 8 tests from OrderProcessingTest
+[ RUN      ] OrderProcessingTest.SendsAndReceivesOrderWithPriority
+[       OK ] OrderProcessingTest.SendsAndReceivesOrderWithPriority (0 ms)
+[ RUN      ] OrderProcessingTest.ReceivesHigherPriorityOrderFirst
+[       OK ] OrderProcessingTest.ReceivesHigherPriorityOrderFirst (0 ms)
+[ RUN      ] OrderProcessingTest.FailsToOpenMissingQueue
+[       OK ] OrderProcessingTest.FailsToOpenMissingQueue (0 ms)
+[ RUN      ] OrderProcessingTest.OpensExistingQueue
+[       OK ] OrderProcessingTest.OpensExistingQueue (0 ms)
+[ RUN      ] OrderProcessingTest.OpensExistingSemaphores
+[       OK ] OrderProcessingTest.OpensExistingSemaphores (0 ms)
+[ RUN      ] OrderProcessingTest.FailsToOpenMissingSemaphores
+[       OK ] OrderProcessingTest.FailsToOpenMissingSemaphores (0 ms)
+[ RUN      ] OrderProcessingTest.LogsOrder
+[       OK ] OrderProcessingTest.LogsOrder (0 ms)
+[ RUN      ] OrderProcessingTest.FailsToLogWhenLogDirectoryIsMissing
+[       OK ] OrderProcessingTest.FailsToLogWhenLogDirectoryIsMissing (0 ms)
+[----------] 8 tests from OrderProcessingTest (2 ms total)
+
+[----------] 5 tests from ApplicationEntryPoints
+[ RUN      ] ApplicationEntryPoints.RejectInvalidConsumerArguments
+Usage: consumer [consumer-id] [order-count]
+[       OK ] ApplicationEntryPoints.RejectInvalidConsumerArguments (0 ms)
+[ RUN      ] ApplicationEntryPoints.RejectInvalidProducerArguments
+Usage: producer [producer-id order-count]
+[       OK ] ApplicationEntryPoints.RejectInvalidProducerArguments (0 ms)
+[ RUN      ] ApplicationEntryPoints.RejectNonPositiveConsumerCount
+Consumer ID and order count must be positive.
+[       OK ] ApplicationEntryPoints.RejectNonPositiveConsumerCount (0 ms)
+[ RUN      ] ApplicationEntryPoints.RejectNonPositiveProducerId
+Producer ID and order count must be positive.
+[       OK ] ApplicationEntryPoints.RejectNonPositiveProducerId (0 ms)
+[ RUN      ] ApplicationEntryPoints.ProcessesSingleOrder
+Produced Order 1001
+
+Processing Order
+ID       : 1001
+Customer : Customer_1001
+Product  : 501
+Quantity : 2
+Amount   : 100.00
+Priority : 2
+[       OK ] ApplicationEntryPoints.ProcessesSingleOrder (3000 ms)
+[----------] 5 tests from ApplicationEntryPoints (3000 ms total)
+
+[----------] Global test environment tear-down
+[==========] 13 tests from 2 test suites ran. (3003 ms total)
+[  PASSED  ] 13 tests.
+make clean-ipc
+make[1]: Entering directory '/workspaces/Linux_Poc'
+rm -f /dev/mqueue/order_queue
+rm -f /dev/shm/sem.empty_sem /dev/shm/sem.full_sem /dev/shm/sem.log_sem /dev/shm/sem.stats_mutex
+rm -f /dev/shm/ecommerce_order_stats
+make[1]: Leaving directory '/workspaces/Linux_Poc'
+: > logs/orders.log
+./coverage/producer 1 1 & producer_pid=$!; \
+sleep 1; \
+./coverage/consumer 1 1; \
+wait $producer_pid
+Produced Order 1001
+
+Processing Order
+ID       : 1001
+Customer : Customer_1001
+Product  : 501
+Quantity : 2
+Amount   : 100.00
+Priority : 2
+mkdir -p coverage/report
+gcov -b -c -r -o coverage/producer-producer.gcno src/producer.c
+File 'src/producer.c'
+Lines executed:28.23% of 124
+Branches executed:28.00% of 100
+Taken at least once:15.00% of 100
+Calls executed:22.92% of 48
+Creating 'producer.c.gcov'
+
+Lines executed:28.23% of 124
+gcov -b -c -r -o coverage/consumer-consumer.gcno src/consumer.c
+File 'src/consumer.c'
+Lines executed:53.73% of 67
+Branches executed:84.00% of 50
+Taken at least once:44.00% of 50
+Calls executed:54.29% of 35
+Creating 'consumer.c.gcov'
+
+Lines executed:53.73% of 67
+gcov -b -c -r -o coverage/mq_manager.gcno src/mq_manager.c
+File 'src/mq_manager.c'
+Lines executed:100.00% of 20
+Branches executed:100.00% of 2
+Taken at least once:50.00% of 2
+Calls executed:100.00% of 6
+Creating 'mq_manager.c.gcov'
+
+Lines executed:100.00% of 20
+gcov -b -c -r -o coverage/semaphore_manager.gcno src/semaphore_manager.c
+File 'src/semaphore_manager.c'
+Lines executed:95.45% of 22
+Branches executed:100.00% of 24
+Taken at least once:66.67% of 24
+Calls executed:100.00% of 12
+Creating 'semaphore_manager.c.gcov'
+
+Lines executed:95.45% of 22
+gcov -b -c -r -o coverage/logger.gcno src/logger.c
+File 'src/logger.c'
+Lines executed:87.88% of 33
+Branches executed:100.00% of 12
+Taken at least once:58.33% of 12
+Calls executed:91.67% of 12
+Creating 'logger.c.gcov'
+
+Lines executed:87.88% of 33
+mv -f *.gcov coverage/report/

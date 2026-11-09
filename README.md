@@ -1,11 +1,14 @@
 # E-Commerce Order Processing POC
 
-A Linux producer-consumer implementation using POSIX message queues and named POSIX semaphores.
+A Linux producer-consumer order system using POSIX message queues, named POSIX semaphores, `fork()`, and shared-memory statistics.
 
 ## Structure
 
 - `include/`: public interfaces and the order model
 - `src/`: producer, consumer, queue, semaphore, and logger implementations
+- `src/order_system.c`: forks two producers and two consumers
+- `src/monitor.c`: queue and statistics monitoring utility
+- `src/stats_manager.c`: shared-memory counters protected by a named mutex semaphore
 - `logs/orders.log`: append-only processing log
 
 ## Build
@@ -17,21 +20,31 @@ make
 make clean-ipc
 ```
 
-The queue has capacity 5. The `empty` and `full` named semaphores coordinate queue capacity and available work. A third named semaphore protects concurrent log writes.
+The queue has capacity 5. The `empty` and `full` named semaphores coordinate queue capacity and available work. A third named semaphore protects concurrent log writes. Shared memory tracks production, processing, fraud flags, recovery, failures, and inventory.
+
+The consumer includes simulated service stages for fraud detection, order tracking through status logging, inventory synchronization, invalid-order validation, and one-step logging recovery. The `order_system` launcher uses `fork()` and `exec()` to run multiple producers and consumers.
 
 ## Run
 
-The total number of orders consumed must equal the total number produced. Clean stale IPC objects before each new run:
+The total number of orders consumed must equal the total number produced. Clean stale IPC objects before each new run. The fork-based complete example is:
 
 ```sh
+make run-example
+cat logs/orders.log
+```
+
+For interactive manual entry, start one producer and one consumer. Enter the same order count for both processes:
+
+```sh
+make clean-ipc
 mkdir -p logs
 : > logs/orders.log
-./producer 1 5 & producer_one=$!
-./producer 2 5 & producer_two=$!
-./consumer 1 5 & consumer_one=$!
-./consumer 2 5 & consumer_two=$!
-wait $producer_one $producer_two $consumer_one $consumer_two
+./producer manual 1 & producer_pid=$!
+./consumer 1 1 & consumer_pid=$!
+wait $producer_pid $consumer_pid
 ```
+
+The manual producer prompts for order ID, customer name, product ID, quantity, amount, and priority. Running `./producer` without arguments displays a menu for manual entry, automatic generation, or exit. The `manual` command accepts `<producer-id> <order-count>` after the mode name; the example above enters one order.
 
 The producer syntax is `./producer <producer-id> <order-count>`. The consumer syntax is `./consumer <consumer-id> <order-count>`. Producer IDs must be unique. For a single-process pair, the defaults are ten orders:
 
@@ -42,7 +55,7 @@ make clean-ipc
 wait $producer_pid $consumer_pid
 ```
 
-The producer generates priorities 1, 2, and 3. POSIX message queues deliver higher-priority messages first. Each consumer exits after its requested count, and the last consumer performs IPC name cleanup. `make run-example` runs the two-producer/two-consumer example.
+Automatic producers generate priorities 1, 2, and 3. POSIX message queues deliver higher-priority messages first. Each consumer exits after its requested count. Run `./monitor` while a producer or consumer is active to view queue depth and shared statistics.
 
 ## Cleanup
 
