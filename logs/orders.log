@@ -1,0 +1,10 @@
+OrderID=1001 Customer=Customer_1001 ProductID=501 Quantity=2 Amount=100.00 Priority=2 Status=inventory-synced
+OrderID=2001 Customer=Customer_2001 ProductID=501 Quantity=2 Amount=100.00 Priority=2 Status=inventory-synced
+OrderID=1002 Customer=Customer_1002 ProductID=502 Quantity=3 Amount=200.00 Priority=3 Status=inventory-synced
+OrderID=2002 Customer=Customer_2002 ProductID=502 Quantity=3 Amount=200.00 Priority=3 Status=inventory-synced
+OrderID=1005 Customer=Customer_1005 ProductID=505 Quantity=3 Amount=500.00 Priority=3 Status=fraud-review
+OrderID=1004 Customer=Customer_1004 ProductID=504 Quantity=2 Amount=400.00 Priority=2 Status=inventory-synced
+OrderID=2005 Customer=Customer_2005 ProductID=505 Quantity=3 Amount=500.00 Priority=3 Status=fraud-review
+OrderID=2004 Customer=Customer_2004 ProductID=504 Quantity=2 Amount=400.00 Priority=2 Status=inventory-synced
+OrderID=1003 Customer=Customer_1003 ProductID=503 Quantity=1 Amount=300.00 Priority=1 Status=inventory-synced
+OrderID=2003 Customer=Customer_2003 ProductID=503 Quantity=1 Amount=300.00 Priority=1 Status=inventory-synced
